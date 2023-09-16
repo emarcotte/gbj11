@@ -53,6 +53,13 @@ enum GameState {
     Playing,
 }
 
+/*
+const C0: &str = "000000";
+const C1: &str = "000000";
+const C2: &str = "000000";
+ */
+const C3: &str = "000000";
+
 fn main() {
     #[cfg(target_arch = "wasm32")]
     console_error_panic_hook::set_once();
@@ -80,6 +87,7 @@ fn main() {
             // Fix sprite blur
             .set(ImagePlugin::default_nearest()),
     )
+    .insert_resource(ClearColor(Color::hex(C3).unwrap()))
     .add_plugins(loading_plugin)
     .add_loading_state(loading_state)
     .add_collection_to_loading_state::<_, GBJAssets>(loading_game_state)

@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.0](https://github.com/emarcotte/gbj11/compare/v0.3.0...v0.4.0) (2023-09-16)
+
+
+### Features
+
+* make bg color red ([ff2e868](https://github.com/emarcotte/gbj11/commit/ff2e868b087d9bbbdfa973276e65d1e06b95a491))
+
+
+### Bug Fixes
+
+* actually red ([0d58bbc](https://github.com/emarcotte/gbj11/commit/0d58bbc456accf1750a5867afaae992067b938dc))
+
 ## [0.3.0](https://github.com/emarcotte/gbj11/compare/v0.2.0...v0.3.0) (2023-09-16)
 
 

@@ -55,10 +55,10 @@ enum GameState {
 
 /*
 const C0: &str = "000000";
-const C1: &str = "000000";
-const C2: &str = "000000";
+const C1: &str = "F0F8BF";
+const C2: &str = "DF904F";
  */
-const C3: &str = "000000";
+const C3: &str = "AF2820";
 
 fn main() {
     #[cfg(target_arch = "wasm32")]

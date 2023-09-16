@@ -16,12 +16,12 @@ repos:
     - id: commitizen
       stages: [commit-msg]
 
-- repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v4.4.0
-  hooks:
-    # Dont commit to main!
-    - id: no-commit-to-branch
-      args: ['--branch', 'main']
+#- repo: https://github.com/pre-commit/pre-commit-hooks
+#  rev: v4.4.0
+#  hooks:
+#    # Dont commit to main!
+#    - id: no-commit-to-branch
+#      args: ['--branch', 'main']
 #   # Branch names need to be fix/simple-names or feat/simple-names
 #   # - id: no-commit-to-branch
 #   #  args: ['--pattern', '^(?!((fix|feat)\/[a-zA-Z0-9\-]+)$).*']

@@ -30,12 +30,38 @@
 // I'm not sure i like this 2018 idiom. Can debate it later.
 #![allow(elided_lifetimes_in_paths)]
 use bevy::{prelude::*, window::WindowResolution};
+use bevy_asset_loader::prelude::*;
+use iyes_progress::prelude::*;
+
+#[derive(Bundle)]
+struct PlayerBundle {
+    #[bundle()]
+    sprite: SpriteBundle,
+}
+
+#[derive(AssetCollection, Resource)]
+struct GBJAssets {
+    #[asset(path = "player.png")]
+    player: Handle<Image>,
+}
+
+#[derive(States, Default, Copy, Clone, Eq, PartialEq, Debug, Hash)]
+enum GameState {
+    #[default]
+    Loading,
+    Setup,
+    Playing,
+}
 
 fn main() {
     #[cfg(target_arch = "wasm32")]
     console_error_panic_hook::set_once();
 
     let mut app = App::default();
+
+    let loading_game_state = GameState::Loading;
+    let loading_state = LoadingState::new(loading_game_state);
+    let loading_plugin = ProgressPlugin::new(loading_game_state).continue_to(GameState::Setup);
 
     app.add_plugins(
         DefaultPlugins
@@ -54,8 +80,27 @@ fn main() {
             // Fix sprite blur
             .set(ImagePlugin::default_nearest()),
     )
+    .add_plugins(loading_plugin)
+    .add_loading_state(loading_state)
+    .add_collection_to_loading_state::<_, GBJAssets>(loading_game_state)
+    .add_state::<GameState>()
     // Fix sprite bleed
     .insert_resource(Msaa::Off)
     .add_systems(Update, bevy::window::close_on_esc)
+    .add_systems(OnEnter(GameState::Setup), setup)
     .run();
+}
+
+fn setup(assets: Res<GBJAssets>, mut commands: Commands) {
+    commands.spawn(Camera2dBundle::default());
+    commands.spawn(PlayerBundle {
+        sprite: SpriteBundle {
+            sprite: Sprite {
+                anchor: bevy::sprite::Anchor::Center,
+                ..default()
+            },
+            texture: assets.player.clone(),
+            ..default()
+        },
+    });
 }

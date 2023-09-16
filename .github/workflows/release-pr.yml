@@ -5,11 +5,6 @@ permissions:
   id-token: write
   contents: write
 
-env:
-  # ALL_CARGO_DIST_TARGET_ARGS: --target=x86_64-unknown-linux-gnu --target=x86_64-apple-darwin --target=x86_64-pc-windows-msvc 
-  ALL_CARGO_DIST_TARGET_ARGS: --target=x86_64-pc-windows-msvc 
-  ALL_CARGO_DIST_INSTALLER_ARGS: ''
-
 on:
   push:
     branches:
@@ -45,7 +40,7 @@ jobs:
           targets: wasm32-unknown-unknown
       - uses: jetli/trunk-action@v0.4.0
       # TODO: Separate build to its own action so it can be reused...
-      - name: Run cargo-dist
+      - name: Run build
         run: |
           echo Running build
           trunk build
@@ -55,7 +50,7 @@ jobs:
           zip -r gbj-${{ needs.create-release.outputs.tag }}.zip gbj-${{ needs.create-release.outputs.tag }}
 
           echo Uploading release
-          gh release upload ${{ needs.create-release.outputs.tag }} gbj-${{ needs.create-release.outputs.tag }}
+          gh release upload ${{ needs.create-release.outputs.tag }} gbj-${{ needs.create-release.outputs.tag }}.zip
 
           echo Mark release as not a draft any more
           gh release edit ${{ needs.create-release.outputs.tag }} --draft=false

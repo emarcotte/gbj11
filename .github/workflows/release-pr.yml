@@ -1,0 +1,61 @@
+name: Release Management
+
+permissions:
+  pull-requests: write
+  id-token: write
+  contents: write
+
+env:
+  # ALL_CARGO_DIST_TARGET_ARGS: --target=x86_64-unknown-linux-gnu --target=x86_64-apple-darwin --target=x86_64-pc-windows-msvc 
+  ALL_CARGO_DIST_TARGET_ARGS: --target=x86_64-pc-windows-msvc 
+  ALL_CARGO_DIST_INSTALLER_ARGS: ''
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  # Create the Github Release™️ so the packages have something to be uploaded to
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release-please.outputs.release_created }}
+      tag: ${{ steps.release-please.outputs.tag_name }}
+    steps:
+      - uses: google-github-actions/release-please-action@v3
+        id: release-please
+        with:
+          release-type: rust
+          package-name: gbj11
+          draft: true
+
+  # Build and packages all the things
+  upload-artifacts:
+    needs: create-release
+    if: ${{ needs.create-release.outputs.release_created }}
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+          targets: wasm32-unknown-unknown
+      - uses: jetli/trunk-action@v0.4.0
+      # TODO: Separate build to its own action so it can be reused...
+      - name: Run cargo-dist
+        run: |
+          echo Running build
+          trunk build
+          mv dist gbj-${{ needs.create-release.outputs.tag }}
+
+          echo Building zip
+          zip -r gbj-${{ needs.create-release.outputs.tag }}.zip gbj-${{ needs.create-release.outputs.tag }}
+
+          echo Uploading release
+          gh release upload ${{ needs.create-release.outputs.tag }} gbj-${{ needs.create-release.outputs.tag }}
+
+          echo Mark release as not a draft any more
+          gh release edit ${{ needs.create-release.outputs.tag }} --draft=false

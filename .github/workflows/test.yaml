@@ -1,0 +1,51 @@
+on:
+  push:
+    branches:
+      -  main
+  pull_request:
+    branches:
+      - main
+
+name: Test and check
+
+jobs:
+  test:
+    runs-on:
+      - ubuntu-latest
+    name: Automated tests and checks
+    env:
+      CARGO_TERM_COLOR: always
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+
+      - name: Install system deps
+        run: |-
+          sudo apt-get install --yes g++ pkg-config libx11-dev libasound2-dev libudev-dev
+
+      - name: Cargo fmt
+        run: cargo fmt --all -- --check
+
+      - name: Collect coverage data
+        run: cargo llvm-cov --workspace --codecov --output-path codecov.json
+
+      - name: Upload coverage data to codecov
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: codecov.json
+          fail_ci_if_error: true
+
+      - name: Clippy
+        run: |-
+          cargo clippy 

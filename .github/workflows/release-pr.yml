@@ -23,8 +23,6 @@ jobs:
         with:
           release-type: rust
           package-name: gbj11
-          draft: true
-          pull-request-header: ""
 
   # Build and packages all the things
   upload-artifacts:

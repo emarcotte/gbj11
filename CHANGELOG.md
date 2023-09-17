@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.1](https://github.com/emarcotte/gbj11/compare/v0.6.0...v0.6.1) (2023-09-17)
+
+
+### Bug Fixes
+
+* `sed` away the absolute path to assets ([b5ca784](https://github.com/emarcotte/gbj11/commit/b5ca7848e2912ad09d49fd54cd0fac817af1507e))
+
 ## [0.6.0](https://github.com/emarcotte/gbj11/compare/v0.5.2...v0.6.0) (2023-09-17)
 
 

@@ -29,12 +29,16 @@
 )]
 // I'm not sure i like this 2018 idiom. Can debate it later.
 #![allow(elided_lifetimes_in_paths)]
-use bevy::{prelude::*, window::WindowResolution};
+use bevy::{prelude::*, sprite::Anchor, window::WindowResolution};
 use bevy_asset_loader::prelude::*;
 use iyes_progress::prelude::*;
 
-#[derive(Bundle)]
+#[derive(Component, Default)]
+struct Player {}
+
+#[derive(Bundle, Default)]
 struct PlayerBundle {
+    player: Player,
     #[bundle()]
     sprite: SpriteBundle,
 }
@@ -43,6 +47,14 @@ struct PlayerBundle {
 struct GBJAssets {
     #[asset(path = "player.png")]
     player: Handle<Image>,
+
+    //    #[asset(path = "baddie1.png")]
+    //   baddie1: Handle<Image>,
+
+    //  #[asset(path = "bg.png")]
+    // bg: Handle<Image>,
+    #[asset(path = "ThatBoy.ttf")]
+    font: Handle<Font>,
 }
 
 #[derive(States, Default, Copy, Clone, Eq, PartialEq, Debug, Hash)]
@@ -53,11 +65,9 @@ enum GameState {
     Playing,
 }
 
-/*
 const C0: &str = "000000";
-const C1: &str = "F0F8BF";
-const C2: &str = "DF904F";
- */
+// const C1: &str = "F0F8BF";
+// const C2: &str = "DF904F";
 const C3: &str = "AF2820";
 
 fn main() {
@@ -96,10 +106,18 @@ fn main() {
     .insert_resource(Msaa::Off)
     .add_systems(Update, bevy::window::close_on_esc)
     .add_systems(OnEnter(GameState::Setup), setup)
+    .add_systems(
+        Update,
+        (fly_in_a_circle).run_if(in_state(GameState::Playing)),
+    )
     .run();
 }
 
-fn setup(assets: Res<GBJAssets>, mut commands: Commands) {
+fn setup(
+    assets: Res<GBJAssets>,
+    mut commands: Commands,
+    mut next_state: ResMut<NextState<GameState>>,
+) {
     commands.spawn(Camera2dBundle::default());
     commands.spawn(PlayerBundle {
         sprite: SpriteBundle {
@@ -110,5 +128,32 @@ fn setup(assets: Res<GBJAssets>, mut commands: Commands) {
             texture: assets.player.clone(),
             ..default()
         },
+        ..default()
     });
+
+    let text_style = TextStyle {
+        font: assets.font.clone(),
+        font_size: 10.0,
+        color: Color::hex(C0).unwrap(),
+    };
+
+    commands.spawn(Text2dBundle {
+        text: Text::from_section("hi", text_style),
+        text_anchor: Anchor::CenterLeft,
+        transform: Transform::from_translation(Vec3::new(0.0, 0.0, 0.0)),
+        ..default()
+    });
+
+    next_state.set(GameState::Playing);
+}
+
+fn fly_in_a_circle(time: Res<Time>, mut player: Query<&mut Transform, With<Player>>) {
+    let Ok(mut player) = player.get_single_mut() else {
+        return;
+    };
+
+    player.rotate(Quat::from_axis_angle(
+        Vec3::Z,
+        (std::f32::consts::PI / time.delta_seconds()) / 10000.,
+    ));
 }

@@ -29,22 +29,23 @@ jobs:
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
 
-      - name: Install system deps
-        run: |-
-          sudo apt-get install --yes g++ pkg-config libx11-dev libasound2-dev libudev-dev
+      - uses: jetli/wasm-pack-action@v0.4.0
 
       - name: Cargo fmt
         run: cargo fmt --all -- --check
 
-      - name: Collect coverage data
-        run: cargo llvm-cov --workspace --codecov --output-path codecov.json
+      - name: WASM tests
+        run: wasm-pack test
 
-      - name: Upload coverage data to codecov
-        uses: codecov/codecov-action@v3
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: codecov.json
-          fail_ci_if_error: true
+      #- name: Collect coverage data
+      #  run: cargo llvm-cov --workspace --codecov --output-path codecov.json
+#
+#      - name: Upload coverage data to codecov
+#        uses: codecov/codecov-action@v3
+#        with:
+#          token: ${{ secrets.CODECOV_TOKEN }}
+#          files: codecov.json
+#          fail_ci_if_error: true
 
       - name: Clippy
         run: |-

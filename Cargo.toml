@@ -16,3 +16,6 @@ version = "0.11.2"
 [dependencies.bevy_asset_loader]
 version = "0.17.0"
 features = ["2d", "progress_tracking"]
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3.37"

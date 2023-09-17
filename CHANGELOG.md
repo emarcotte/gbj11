@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.3](https://github.com/emarcotte/gbj11/compare/v0.6.2...v0.6.3) (2023-09-17)
+
+
+### Bug Fixes
+
+* use LFS when checking out in actions ([9f1dec9](https://github.com/emarcotte/gbj11/commit/9f1dec98bbc448d309a797a792a010bb5783fa6a))
+
 ## [0.6.2](https://github.com/emarcotte/gbj11/compare/v0.6.1...v0.6.2) (2023-09-17)
 
 

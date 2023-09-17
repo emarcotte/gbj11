@@ -48,9 +48,9 @@ jobs:
       - name: Run build
         run: |
           set -ex
-          trunk build
+          trunk build --release
 
-          sed -i 's|/gbj|gbj|g' dist/index.html
+          sed -i 's|/gbj|./gbj|g' dist/index.html
 
           touch dist/.nojekyll
 

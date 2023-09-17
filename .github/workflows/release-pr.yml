@@ -47,25 +47,29 @@ jobs:
       # TODO: Separate build to its own action so it can be reused...
       - name: Run build
         run: |
-          echo Running build
+          set -ex
           trunk build
+
+          sed -i 's|/gbj|gbj|g' dist/index.html
+
           touch dist/.nojekyll
+
           mv dist gbj-${{ needs.create-release.outputs.tag }}
 
-          echo Building zip
           zip -r gbj-${{ needs.create-release.outputs.tag }}.zip gbj-${{ needs.create-release.outputs.tag }}
 
-          echo Uploading release
           gh release upload ${{ needs.create-release.outputs.tag }} gbj-${{ needs.create-release.outputs.tag }}.zip
 
-          echo Mark release as not a draft any more
           gh release edit ${{ needs.create-release.outputs.tag }} --draft=false
+
       - name: Setup Pages
         uses: actions/configure-pages@v3
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v2
         with:
           path: gbj-${{ needs.create-release.outputs.tag }}
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v2

@@ -35,3 +35,4 @@ https://itch.io/jam/gbjam-11
 - https://github.com/thedodd/trunk/issues/597
 - Apparently std::time::Instant isn't really compatible with WASM/WASM-bind.
 - https://stackoverflow.com/a/71489231/461215
+- https://github.com/NiklasEi/bevy_game_template/issues/25

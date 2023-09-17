@@ -34,3 +34,4 @@ https://itch.io/jam/gbjam-11
 - https://bevyengine.org/examples-webgpu/2D%20Rendering/pixel-perfect/
 - https://github.com/thedodd/trunk/issues/597
 - Apparently std::time::Instant isn't really compatible with WASM/WASM-bind.
+- https://stackoverflow.com/a/71489231/461215

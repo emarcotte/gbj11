@@ -53,3 +53,7 @@ jobs:
 
           echo Mark release as not a draft any more
           gh release edit ${{ needs.create-release.outputs.tag }} --draft=false
+      - name: Deploy to github pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+            folder: gbj-${{ needs.create-release.outputs.tag }}

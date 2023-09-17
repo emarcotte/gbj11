@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/emarcotte/gbj11/compare/v0.5.2...v0.6.0) (2023-09-17)
+
+
+### Features
+
+* Animation of player ([2a3dfa8](https://github.com/emarcotte/gbj11/commit/2a3dfa8bc7101e57082a3a3e7ed7f24d07baac98))
+
 ## [0.5.2](https://github.com/emarcotte/gbj11/compare/v0.5.1...v0.5.2) (2023-09-17)
 
 

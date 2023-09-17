@@ -34,6 +34,29 @@ use bevy::{prelude::*, window::WindowResolution};
 use bevy_asset_loader::prelude::*;
 use iyes_progress::prelude::*;
 
+#[derive(Component, Clone, Default)]
+struct AnimationIndices {
+    first: usize,
+    last: usize,
+}
+
+// TODO: If I was really clever I could figure out how to make this a proper full
+// asset with image and animations combined...
+#[derive(Resource)]
+struct AnimationTables {
+    player: PlayerAnimationTable,
+}
+
+struct PlayerAnimationTable {
+    // idle: AnimationIndices,
+    flying: AnimationIndices,
+}
+
+#[derive(Component, Default)]
+struct AnimationTimer {
+    timer: Timer,
+}
+
 #[derive(Component, Default)]
 struct Player {}
 
@@ -52,17 +75,20 @@ struct TimerBundle {
 #[derive(Component, Default)]
 struct TimerWidget {}
 
-#[derive(Bundle, Default)]
+#[derive(Bundle)]
 struct PlayerBundle {
     player: Player,
     #[bundle()]
-    sprite: SpriteBundle,
+    sprite: SpriteSheetBundle,
+    animation: AnimationIndices,
+    animation_timer: AnimationTimer,
 }
 
 #[derive(AssetCollection, Resource)]
 struct GBJAssets {
+    #[asset(texture_atlas(tile_size_x = 18., tile_size_y = 18., columns = 6, rows = 1))]
     #[asset(path = "player.png")]
-    player: Handle<Image>,
+    player: Handle<TextureAtlas>,
 
     //    #[asset(path = "baddie1.png")]
     //   baddie1: Handle<Image>,
@@ -83,7 +109,7 @@ enum GameState {
 
 const C0: &str = "000000";
 const C1: &str = "F0F8BF";
-// const C2: &str = "DF904F";
+//const C2: &str = "DF904F";
 const C3: &str = "AF2820";
 
 fn main() {
@@ -113,18 +139,24 @@ fn main() {
             // Fix sprite blur
             .set(ImagePlugin::default_nearest()),
     )
-    .insert_resource(ClearColor(Color::hex(C3).unwrap()))
     .add_plugins(loading_plugin)
+    .insert_resource(ClearColor(Color::hex(C3).unwrap()))
     .add_loading_state(loading_state)
     .add_collection_to_loading_state::<_, GBJAssets>(loading_game_state)
     .add_state::<GameState>()
     // Fix sprite bleed
     .insert_resource(Msaa::Off)
+    .insert_resource(AnimationTables {
+        player: PlayerAnimationTable {
+            // idle: AnimationIndices { first: 0, last: 0 },
+            flying: AnimationIndices { first: 1, last: 5 },
+        },
+    })
     .add_systems(Update, bevy::window::close_on_esc)
     .add_systems(OnEnter(GameState::Setup), setup)
     .add_systems(
         Update,
-        (fly_in_a_circle, update_timer).run_if(in_state(GameState::Playing)),
+        (animate, fly_in_a_circle, update_timer).run_if(in_state(GameState::Playing)),
     )
     .run();
 }
@@ -132,21 +164,32 @@ fn main() {
 fn setup(
     assets: Res<GBJAssets>,
     mut commands: Commands,
+    animation_table: Res<AnimationTables>,
     mut next_state: ResMut<NextState<GameState>>,
 ) {
     commands.spawn(Camera2dBundle::default());
     commands.spawn(PlayerBundle {
-        sprite: SpriteBundle {
-            sprite: Sprite {
-                anchor: bevy::sprite::Anchor::Center,
+        player: Player {},
+        sprite: SpriteSheetBundle {
+            texture_atlas: assets.player.clone(),
+            sprite: TextureAtlasSprite {
+                index: animation_table.player.flying.first,
                 ..default()
             },
-            texture: assets.player.clone(),
             ..default()
         },
-        ..default()
+        animation_timer: AnimationTimer {
+            timer: Timer::from_seconds(0.1, TimerMode::Repeating),
+        },
+        animation: animation_table.player.flying.clone(),
     });
 
+    setup_hud(assets, commands);
+
+    next_state.set(GameState::Playing);
+}
+
+fn setup_hud(assets: Res<'_, GBJAssets>, mut commands: Commands<'_, '_>) {
     let text_style = TextStyle {
         font: assets.font.clone(),
         font_size: 28.0,
@@ -177,8 +220,6 @@ fn setup(
                 ..default()
             },));
         });
-
-    next_state.set(GameState::Playing);
 }
 
 fn update_timer(
@@ -203,8 +244,26 @@ fn fly_in_a_circle(time: Res<Time>, mut player: Query<&mut Transform, With<Playe
         return;
     };
 
-    player.rotate(Quat::from_axis_angle(
-        Vec3::Z,
-        (std::f32::consts::PI / time.delta_seconds()) / 10000.,
-    ));
+    *player = Transform::from_rotation(Quat::from_axis_angle(Vec3::Z, time.elapsed_seconds()))
+        .with_translation(Vec3::X * 30.);
+}
+
+fn animate(
+    time: Res<Time>,
+    mut animated_sprites: Query<(
+        &mut AnimationTimer,
+        &AnimationIndices,
+        &mut TextureAtlasSprite,
+    )>,
+) {
+    for (mut timer, indices, mut sprite) in &mut animated_sprites {
+        timer.timer.tick(time.delta());
+        if timer.timer.finished() {
+            let mut new_index = sprite.index + 1;
+            if new_index > indices.last {
+                new_index = indices.first;
+            }
+            sprite.index = new_index;
+        }
+    }
 }

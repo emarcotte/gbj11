@@ -48,6 +48,7 @@ jobs:
         run: |
           echo Running build
           trunk build
+          touch dist/.nojekyll
           mv dist gbj-${{ needs.create-release.outputs.tag }}
 
           echo Building zip

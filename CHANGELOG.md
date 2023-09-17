@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.1](https://github.com/emarcotte/gbj11/compare/v0.5.0...v0.5.1) (2023-09-17)
+
+
+### Bug Fixes
+
+* try to add cache to release step ([1b25235](https://github.com/emarcotte/gbj11/commit/1b2523515b9ddf99aaeb4f7fc4a051d2fa5e8a89))
+* try to fix ghp deploy ([0478a51](https://github.com/emarcotte/gbj11/commit/0478a5127ca9dd22b7d8a40e426f7848f4865e7b))
+
 ## [0.5.0](https://github.com/emarcotte/gbj11/compare/v0.4.0...v0.5.0) (2023-09-17)
 
 

@@ -1,6 +1,8 @@
 # GB Jam 11 / 2023 
 
-https://itch.io/jam/gbjam-11
+- The Jam: https://itch.io/jam/gbjam-11
+- Latest release: [github pages](https://emarcotte.github.io/gbj11/)
+- Itch release: coming soon
 
 ## Rules:
 
@@ -14,7 +16,6 @@ https://itch.io/jam/gbjam-11
 3. 160x144
 4. Assets must be made during jam: font is one exception.
     1. Using this font: https://arcade.itch.io/that-boy
-    2. Inspiration from https://img.itch.zone/aW1nLzI3NjM1NjMuZ2lm/original/QMWw8N.gif
 
 ## Build/test etc
 

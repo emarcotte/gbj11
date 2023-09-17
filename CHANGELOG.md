@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.2](https://github.com/emarcotte/gbj11/compare/v0.5.1...v0.5.2) (2023-09-17)
+
+
+### Bug Fixes
+
+* dont pretend to be jekyll ([219e326](https://github.com/emarcotte/gbj11/commit/219e326a15d12de8554f6d1039501dd2d68ee916))
+* some more gh fixups ([4fc37b8](https://github.com/emarcotte/gbj11/commit/4fc37b8485ce99959c3dfc2c782aa892a7cbc584))
+
 ## [0.5.1](https://github.com/emarcotte/gbj11/compare/v0.5.0...v0.5.1) (2023-09-17)
 
 

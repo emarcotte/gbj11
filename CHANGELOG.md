@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.5.0](https://github.com/emarcotte/gbj11/compare/v0.4.0...v0.5.0) (2023-09-17)
+
+
+### Features
+
+* Load a font and add some basic system ([35fe605](https://github.com/emarcotte/gbj11/commit/35fe605e5926a24447c013657023c3bab47ae484))
+* Timer ([cf2b6ff](https://github.com/emarcotte/gbj11/commit/cf2b6ffb2dcfe796e721e1a5552cf17963c80354))
+* try to publish on release ([86c2493](https://github.com/emarcotte/gbj11/commit/86c2493b2d02d5c57effb8cf62dd1768e4e5d66f))
+
+
+### Bug Fixes
+
+* install wasm rust target in gha ([482d122](https://github.com/emarcotte/gbj11/commit/482d12255f94770b55ef7fbd9b61ab2b7850c0fc))
+
 ## [0.4.0](https://github.com/emarcotte/gbj11/compare/v0.3.0...v0.4.0) (2023-09-16)
 
 

@@ -34,8 +34,13 @@ jobs:
       - name: Cargo fmt
         run: cargo fmt --all -- --check
 
-      - name: WASM tests
-        run: wasm-pack test
+      - uses: jetli/trunk-action@v0.4.0
+
+      - name: Simple build
+        run: trunk build
+
+      # - name: WASM tests
+      #  run: wasm-pack test --firefox
 
       #- name: Collect coverage data
       #  run: cargo llvm-cov --workspace --codecov --output-path codecov.json

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.2](https://github.com/emarcotte/gbj11/compare/v0.6.1...v0.6.2) (2023-09-17)
+
+
+### Bug Fixes
+
+* Modules need to be relative, and use release mode ([6f16f33](https://github.com/emarcotte/gbj11/commit/6f16f33d03e76690f8b4ec28e78c9333c3b71de7))
+
 ## [0.6.1](https://github.com/emarcotte/gbj11/compare/v0.6.0...v0.6.1) (2023-09-17)
 
 

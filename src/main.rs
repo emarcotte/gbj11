@@ -29,12 +29,28 @@
 )]
 // I'm not sure i like this 2018 idiom. Can debate it later.
 #![allow(elided_lifetimes_in_paths)]
-use bevy::{prelude::*, sprite::Anchor, window::WindowResolution};
+
+use bevy::{prelude::*, window::WindowResolution};
 use bevy_asset_loader::prelude::*;
 use iyes_progress::prelude::*;
 
 #[derive(Component, Default)]
 struct Player {}
+
+#[derive(Resource)]
+struct GameTimer {
+    ends_in: f32,
+}
+
+#[derive(Bundle, Default)]
+struct TimerBundle {
+    #[bundle()]
+    text: TextBundle,
+    widget: TimerWidget,
+}
+
+#[derive(Component, Default)]
+struct TimerWidget {}
 
 #[derive(Bundle, Default)]
 struct PlayerBundle {
@@ -66,7 +82,7 @@ enum GameState {
 }
 
 const C0: &str = "000000";
-// const C1: &str = "F0F8BF";
+const C1: &str = "F0F8BF";
 // const C2: &str = "DF904F";
 const C3: &str = "AF2820";
 
@@ -108,7 +124,7 @@ fn main() {
     .add_systems(OnEnter(GameState::Setup), setup)
     .add_systems(
         Update,
-        (fly_in_a_circle).run_if(in_state(GameState::Playing)),
+        (fly_in_a_circle, update_timer).run_if(in_state(GameState::Playing)),
     )
     .run();
 }
@@ -133,18 +149,53 @@ fn setup(
 
     let text_style = TextStyle {
         font: assets.font.clone(),
-        font_size: 10.0,
+        font_size: 28.0,
         color: Color::hex(C0).unwrap(),
     };
 
-    commands.spawn(Text2dBundle {
-        text: Text::from_section("hi", text_style),
-        text_anchor: Anchor::CenterLeft,
-        transform: Transform::from_translation(Vec3::new(0.0, 0.0, 0.0)),
-        ..default()
-    });
+    commands.insert_resource(GameTimer { ends_in: 90f32 });
+
+    commands
+        .spawn(NodeBundle {
+            style: Style {
+                position_type: PositionType::Absolute,
+                left: Val::Px(0.0),
+                bottom: Val::Px(0.),
+                width: Val::Percent(100.),
+                height: Val::Px(14.),
+                ..default()
+            },
+            background_color: BackgroundColor::from(Color::hex(C1).unwrap()),
+            ..default()
+        })
+        .with_children(|parent| {
+            parent.spawn((TimerBundle {
+                text: TextBundle::from_section("Hi", text_style).with_style(Style {
+                    margin: UiRect::top(Val::Px(-12.)),
+                    ..default()
+                }),
+                ..default()
+            },));
+        });
 
     next_state.set(GameState::Playing);
+}
+
+fn update_timer(
+    time: Res<Time>,
+    mut game_timer: ResMut<GameTimer>,
+    mut text_widget: Query<&mut Text, With<TimerWidget>>,
+) {
+    let Ok(mut text) = text_widget.get_single_mut() else {
+        return;
+    };
+
+    if game_timer.ends_in > 0.0f32 {
+        text.sections[0].value = format!("{}", game_timer.ends_in as u32);
+        game_timer.ends_in -= time.delta_seconds();
+    } else {
+        text.sections[0].value = "OH SHIT!".to_string();
+    }
 }
 
 fn fly_in_a_circle(time: Res<Time>, mut player: Query<&mut Transform, With<Player>>) {

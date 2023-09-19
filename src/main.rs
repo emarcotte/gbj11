@@ -30,10 +30,13 @@
 // I'm not sure i like this 2018 idiom. Can debate it later.
 #![allow(elided_lifetimes_in_paths)]
 
+use animation::{animate, AnimationIndices, AnimationTimer};
 use bevy::{prelude::*, window::WindowResolution};
 use bevy_asset_loader::prelude::*;
 use iyes_progress::prelude::*;
 use leafwing_input_manager::prelude::*;
+
+mod animation;
 
 #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
 enum Action {
@@ -42,12 +45,6 @@ enum Action {
     B,
     Select,
     Start,
-}
-
-#[derive(Component, Clone, Default)]
-struct AnimationIndices {
-    first: usize,
-    last: usize,
 }
 
 // TODO: If I was really clever I could figure out how to make this a proper full
@@ -60,11 +57,6 @@ struct AnimationTables {
 struct PlayerAnimationTable {
     // idle: AnimationIndices,
     flying: AnimationIndices,
-}
-
-#[derive(Component, Default)]
-struct AnimationTimer {
-    timer: Timer,
 }
 
 #[derive(Component, Default)]
@@ -303,26 +295,6 @@ fn player_inputs(
     if action_state.pressed(Action::Move) {
         if let Some(axis) = action_state.clamped_axis_pair(Action::Move) {
             position.translation += (axis.xy() * time.delta_seconds() * 10.0).extend(0.0);
-        }
-    }
-}
-
-fn animate(
-    time: Res<Time>,
-    mut animated_sprites: Query<(
-        &mut AnimationTimer,
-        &AnimationIndices,
-        &mut TextureAtlasSprite,
-    )>,
-) {
-    for (mut timer, indices, mut sprite) in &mut animated_sprites {
-        timer.timer.tick(time.delta());
-        if timer.timer.finished() {
-            let mut new_index = sprite.index + 1;
-            if new_index > indices.last {
-                new_index = indices.first;
-            }
-            sprite.index = new_index;
         }
     }
 }

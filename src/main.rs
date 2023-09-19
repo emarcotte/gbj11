@@ -52,6 +52,7 @@ enum Action {
 #[derive(Resource)]
 struct AnimationTables {
     player: PlayerAnimationTable,
+    baddie1: BaddieAnimationTable,
 }
 
 struct PlayerAnimationTable {
@@ -59,8 +60,15 @@ struct PlayerAnimationTable {
     flying: AnimationIndices,
 }
 
+struct BaddieAnimationTable {
+    idle: AnimationIndices,
+}
+
 #[derive(Component, Default)]
 struct Player {}
+
+#[derive(Component, Default)]
+struct Baddie {}
 
 #[derive(Resource)]
 struct GameTimer {
@@ -88,6 +96,35 @@ struct PlayerBundle {
     animation_timer: AnimationTimer,
 }
 
+#[derive(Bundle)]
+struct BaddieBundle {
+    #[bundle()]
+    sprite: SpriteSheetBundle,
+    animation: AnimationIndices,
+    animation_timer: AnimationTimer,
+    baddie: Baddie,
+}
+
+impl BaddieBundle {
+    fn new(assets: &Res<'_, GBJAssets>, animation_table: &BaddieAnimationTable) -> Self {
+        BaddieBundle {
+            baddie: Baddie {},
+            sprite: SpriteSheetBundle {
+                texture_atlas: assets.baddie1.clone(),
+                sprite: TextureAtlasSprite {
+                    index: animation_table.idle.first,
+                    ..default()
+                },
+                ..default()
+            },
+            animation_timer: AnimationTimer {
+                timer: Timer::from_seconds(0.1, TimerMode::Repeating),
+            },
+            animation: animation_table.idle.clone(),
+        }
+    }
+}
+
 fn player_input_map() -> InputMap<Action> {
     let mut input_map = InputMap::default();
     input_map.insert(KeyCode::A, Action::A);
@@ -109,7 +146,7 @@ fn player_input_map() -> InputMap<Action> {
 }
 
 impl PlayerBundle {
-    fn new(assets: &Res<'_, GBJAssets>, animation_table: &Res<'_, AnimationTables>) -> Self {
+    fn new(assets: &Res<'_, GBJAssets>, animation_table: &PlayerAnimationTable) -> Self {
         PlayerBundle {
             input_manager: InputManagerBundle::<Action> {
                 action_state: ActionState::default(),
@@ -119,7 +156,7 @@ impl PlayerBundle {
             sprite: SpriteSheetBundle {
                 texture_atlas: assets.player.clone(),
                 sprite: TextureAtlasSprite {
-                    index: animation_table.player.flying.first,
+                    index: animation_table.flying.first,
                     ..default()
                 },
                 ..default()
@@ -127,7 +164,7 @@ impl PlayerBundle {
             animation_timer: AnimationTimer {
                 timer: Timer::from_seconds(0.1, TimerMode::Repeating),
             },
-            animation: animation_table.player.flying.clone(),
+            animation: animation_table.flying.clone(),
         }
     }
 }
@@ -138,8 +175,9 @@ struct GBJAssets {
     #[asset(path = "player.png")]
     player: Handle<TextureAtlas>,
 
-    //    #[asset(path = "baddie1.png")]
-    //   baddie1: Handle<Image>,
+    #[asset(texture_atlas(tile_size_x = 32., tile_size_y = 32., columns = 1, rows = 1))]
+    #[asset(path = "baddie1.png")]
+    baddie1: Handle<TextureAtlas>,
 
     //  #[asset(path = "bg.png")]
     // bg: Handle<Image>,
@@ -200,12 +238,23 @@ fn main() {
             // idle: AnimationIndices { first: 0, last: 0 },
             flying: AnimationIndices { first: 1, last: 5 },
         },
+        baddie1: {
+            BaddieAnimationTable {
+                idle: AnimationIndices { first: 0, last: 0 },
+            }
+        },
     })
     .add_systems(Update, bevy::window::close_on_esc)
     .add_systems(OnEnter(GameState::Setup), setup)
     .add_systems(
         Update,
-        (animate, fly_in_a_circle, update_timer, player_inputs)
+        (
+            animate,
+            wiggle,
+            fly_in_a_circle,
+            update_timer,
+            player_inputs,
+        )
             .run_if(in_state(GameState::Playing)),
     )
     .run();
@@ -218,7 +267,8 @@ fn setup(
     mut next_state: ResMut<NextState<GameState>>,
 ) {
     commands.spawn(Camera2dBundle::default());
-    commands.spawn(PlayerBundle::new(&assets, &animation_table));
+    commands.spawn(PlayerBundle::new(&assets, &animation_table.player));
+    commands.spawn(BaddieBundle::new(&assets, &animation_table.baddie1));
 
     setup_hud(assets, commands);
 
@@ -272,6 +322,17 @@ fn update_timer(
         game_timer.ends_in -= time.delta_seconds();
     } else {
         text.sections[0].value = "OH SHIT!".to_string();
+    }
+}
+
+fn wiggle(time: Res<Time>, mut baddies: Query<&mut Transform, With<Baddie>>) {
+    for mut xform in &mut baddies {
+        let time = time.elapsed_seconds();
+        *xform = Transform::from_translation(Vec3::new(time.cos() * 40.0, time.sin() * 40.0, 0.0))
+            .with_rotation(Quat::from_axis_angle(
+                Vec3::Z,
+                time + std::f32::consts::PI / 2.0,
+            ));
     }
 }
 

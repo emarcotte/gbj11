@@ -9,6 +9,7 @@ edition = "2021"
 iyes_progress = "0.9.1"
 console_error_panic_hook = "0.1.7"
 bevy_xpbd_2d = "0.2"
+leafwing-input-manager = "0.10.0"
 
 [dependencies.bevy]
 version = "0.11.2"

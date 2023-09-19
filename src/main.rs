@@ -33,6 +33,16 @@
 use bevy::{prelude::*, window::WindowResolution};
 use bevy_asset_loader::prelude::*;
 use iyes_progress::prelude::*;
+use leafwing_input_manager::prelude::*;
+
+#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
+enum Action {
+    Move,
+    A,
+    B,
+    Select,
+    Start,
+}
 
 #[derive(Component, Clone, Default)]
 struct AnimationIndices {
@@ -77,11 +87,57 @@ struct TimerWidget {}
 
 #[derive(Bundle)]
 struct PlayerBundle {
+    #[bundle()]
+    input_manager: InputManagerBundle<Action>,
     player: Player,
     #[bundle()]
     sprite: SpriteSheetBundle,
     animation: AnimationIndices,
     animation_timer: AnimationTimer,
+}
+
+fn player_input_map() -> InputMap<Action> {
+    let mut input_map = InputMap::default();
+    input_map.insert(KeyCode::A, Action::A);
+    input_map.insert(KeyCode::B, Action::B);
+    input_map.insert(
+        VirtualDPad {
+            up: KeyCode::Up.into(),
+            down: KeyCode::Down.into(),
+            left: KeyCode::Left.into(),
+            right: KeyCode::Right.into(),
+        },
+        Action::Move,
+    );
+    input_map.insert(KeyCode::Return, Action::Start);
+    input_map.insert(KeyCode::NumpadEnter, Action::Start);
+    input_map.insert(KeyCode::ShiftLeft, Action::Select);
+    input_map.insert(KeyCode::ShiftRight, Action::Select);
+    input_map
+}
+
+impl PlayerBundle {
+    fn new(assets: &Res<'_, GBJAssets>, animation_table: &Res<'_, AnimationTables>) -> Self {
+        PlayerBundle {
+            input_manager: InputManagerBundle::<Action> {
+                action_state: ActionState::default(),
+                input_map: player_input_map(),
+            },
+            player: Player {},
+            sprite: SpriteSheetBundle {
+                texture_atlas: assets.player.clone(),
+                sprite: TextureAtlasSprite {
+                    index: animation_table.player.flying.first,
+                    ..default()
+                },
+                ..default()
+            },
+            animation_timer: AnimationTimer {
+                timer: Timer::from_seconds(0.1, TimerMode::Repeating),
+            },
+            animation: animation_table.player.flying.clone(),
+        }
+    }
 }
 
 #[derive(AssetCollection, Resource)]
@@ -140,10 +196,11 @@ fn main() {
             .set(ImagePlugin::default_nearest()),
     )
     .add_plugins(loading_plugin)
-    .insert_resource(ClearColor(Color::hex(C3).unwrap()))
+    .add_plugins(InputManagerPlugin::<Action>::default())
     .add_loading_state(loading_state)
     .add_collection_to_loading_state::<_, GBJAssets>(loading_game_state)
     .add_state::<GameState>()
+    .insert_resource(ClearColor(Color::hex(C3).unwrap()))
     // Fix sprite bleed
     .insert_resource(Msaa::Off)
     .insert_resource(AnimationTables {
@@ -156,7 +213,8 @@ fn main() {
     .add_systems(OnEnter(GameState::Setup), setup)
     .add_systems(
         Update,
-        (animate, fly_in_a_circle, update_timer).run_if(in_state(GameState::Playing)),
+        (animate, fly_in_a_circle, update_timer, player_inputs)
+            .run_if(in_state(GameState::Playing)),
     )
     .run();
 }
@@ -168,21 +226,7 @@ fn setup(
     mut next_state: ResMut<NextState<GameState>>,
 ) {
     commands.spawn(Camera2dBundle::default());
-    commands.spawn(PlayerBundle {
-        player: Player {},
-        sprite: SpriteSheetBundle {
-            texture_atlas: assets.player.clone(),
-            sprite: TextureAtlasSprite {
-                index: animation_table.player.flying.first,
-                ..default()
-            },
-            ..default()
-        },
-        animation_timer: AnimationTimer {
-            timer: Timer::from_seconds(0.1, TimerMode::Repeating),
-        },
-        animation: animation_table.player.flying.clone(),
-    });
+    commands.spawn(PlayerBundle::new(&assets, &animation_table));
 
     setup_hud(assets, commands);
 
@@ -245,7 +289,22 @@ fn fly_in_a_circle(time: Res<Time>, mut player: Query<&mut Transform, With<Playe
     };
 
     *player = Transform::from_rotation(Quat::from_axis_angle(Vec3::Z, time.elapsed_seconds()))
-        .with_translation(Vec3::X * 30.);
+        .with_translation(player.translation);
+}
+
+fn player_inputs(
+    time: Res<Time>,
+    mut player_query: Query<(&mut Transform, &ActionState<Action>), With<Player>>,
+) {
+    let Ok((mut position, action_state)) = player_query.get_single_mut() else {
+        return;
+    };
+
+    if action_state.pressed(Action::Move) {
+        if let Some(axis) = action_state.clamped_axis_pair(Action::Move) {
+            position.translation += (axis.xy() * time.delta_seconds() * 10.0).extend(0.0);
+        }
+    }
 }
 
 fn animate(

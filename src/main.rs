@@ -33,6 +33,7 @@
 use animation::{animate, AnimationIndices, AnimationTimer};
 use bevy::{prelude::*, window::WindowResolution};
 use bevy_asset_loader::prelude::*;
+use bevy_xpbd_2d::prelude::*;
 use iyes_progress::prelude::*;
 use leafwing_input_manager::prelude::*;
 
@@ -94,6 +95,9 @@ struct PlayerBundle {
     sprite: SpriteSheetBundle,
     animation: AnimationIndices,
     animation_timer: AnimationTimer,
+    rigid_body: RigidBody,
+    collider: Collider,
+    external_force: ExternalForce,
 }
 
 #[derive(Bundle)]
@@ -103,12 +107,16 @@ struct BaddieBundle {
     animation: AnimationIndices,
     animation_timer: AnimationTimer,
     baddie: Baddie,
+    rigid_body: RigidBody,
+    collider: Collider,
+    external_force: ExternalForce,
 }
 
 impl BaddieBundle {
     fn new(assets: &Res<'_, GBJAssets>, animation_table: &BaddieAnimationTable) -> Self {
         BaddieBundle {
             baddie: Baddie {},
+            rigid_body: RigidBody::Dynamic,
             sprite: SpriteSheetBundle {
                 texture_atlas: assets.baddie1.clone(),
                 sprite: TextureAtlasSprite {
@@ -121,6 +129,8 @@ impl BaddieBundle {
                 timer: Timer::from_seconds(0.1, TimerMode::Repeating),
             },
             animation: animation_table.idle.clone(),
+            collider: Collider::ball(16.0),
+            external_force: ExternalForce::ZERO,
         }
     }
 }
@@ -148,6 +158,7 @@ fn player_input_map() -> InputMap<Action> {
 impl PlayerBundle {
     fn new(assets: &Res<'_, GBJAssets>, animation_table: &PlayerAnimationTable) -> Self {
         PlayerBundle {
+            rigid_body: RigidBody::Dynamic,
             input_manager: InputManagerBundle::<Action> {
                 action_state: ActionState::default(),
                 input_map: player_input_map(),
@@ -165,6 +176,8 @@ impl PlayerBundle {
                 timer: Timer::from_seconds(0.1, TimerMode::Repeating),
             },
             animation: animation_table.flying.clone(),
+            collider: Collider::ball(9.0),
+            external_force: ExternalForce::ZERO,
         }
     }
 }
@@ -208,7 +221,7 @@ fn main() {
     let loading_state = LoadingState::new(loading_game_state);
     let loading_plugin = ProgressPlugin::new(loading_game_state).continue_to(GameState::Setup);
 
-    app.add_plugins(
+    app.add_plugins((
         DefaultPlugins
             .set(WindowPlugin {
                 primary_window: Some(Window {
@@ -224,9 +237,10 @@ fn main() {
             })
             // Fix sprite blur
             .set(ImagePlugin::default_nearest()),
-    )
-    .add_plugins(loading_plugin)
-    .add_plugins(InputManagerPlugin::<Action>::default())
+        loading_plugin,
+        InputManagerPlugin::<Action>::default(),
+        PhysicsPlugins::default(),
+    ))
     .add_loading_state(loading_state)
     .add_collection_to_loading_state::<_, GBJAssets>(loading_game_state)
     .add_state::<GameState>()
@@ -244,14 +258,15 @@ fn main() {
             }
         },
     })
+    .insert_resource(Gravity(Vec2::ZERO))
     .add_systems(Update, bevy::window::close_on_esc)
     .add_systems(OnEnter(GameState::Setup), setup)
     .add_systems(
         Update,
         (
             animate,
-            wiggle,
-            fly_in_a_circle,
+            //  wiggle,
+            // fly_in_a_circle,
             update_timer,
             player_inputs,
         )
@@ -325,6 +340,7 @@ fn update_timer(
     }
 }
 
+/*
 fn wiggle(time: Res<Time>, mut baddies: Query<&mut Transform, With<Baddie>>) {
     for mut xform in &mut baddies {
         let time = time.elapsed_seconds();
@@ -344,18 +360,24 @@ fn fly_in_a_circle(time: Res<Time>, mut player: Query<&mut Transform, With<Playe
     *player = Transform::from_rotation(Quat::from_axis_angle(Vec3::Z, time.elapsed_seconds()))
         .with_translation(player.translation);
 }
+ */
 
 fn player_inputs(
-    time: Res<Time>,
-    mut player_query: Query<(&mut Transform, &ActionState<Action>), With<Player>>,
+    mut player_query: Query<(&mut ExternalForce, &ActionState<Action>), With<Player>>,
 ) {
-    let Ok((mut position, action_state)) = player_query.get_single_mut() else {
+    let Ok((mut force, action_state)) = player_query.get_single_mut() else {
         return;
     };
 
     if action_state.pressed(Action::Move) {
         if let Some(axis) = action_state.clamped_axis_pair(Action::Move) {
-            position.translation += (axis.xy() * time.delta_seconds() * 10.0).extend(0.0);
+            let y_axis = Vec2::new(0., axis.y());
+            let x_axis = Vec2::new(axis.x(), 0.) * 10.0;
+            force
+                .apply_force_at_point(x_axis, Vec2::Y * 10., Vec2::ZERO)
+                .apply_force(y_axis)
+                .with_persistence(false);
+            //position.translation += (axis.xy() * time.delta_seconds() * 10.0).extend(0.0);
         }
     }
 }

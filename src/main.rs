@@ -13,6 +13,9 @@
 #![allow(clippy::cast_precision_loss)]
 #![allow(clippy::cast_sign_loss)]
 #![allow(clippy::cast_possible_wrap)]
+// Sadly some systems have super complex type signatures and I'm not sure how to refactor it right now?
+#![allow(clippy::type_complexity)]
+// Turn on some stuff that isn't in pedantic.
 #![warn(
     future_incompatible,
     nonstandard_style,
@@ -100,6 +103,7 @@ struct PlayerBundle {
     external_force: ExternalForce,
     external_torque: ExternalTorque,
     angular_dampening: AngularDamping,
+    linear_dampening: LinearDamping,
 }
 
 #[derive(Bundle)]
@@ -184,8 +188,9 @@ impl PlayerBundle {
             animation: animation_table.flying.clone(),
             collider: Collider::ball(9.0),
             external_force: ExternalForce::ZERO,
-            angular_dampening: AngularDamping(2.25),
+            angular_dampening: AngularDamping(0.20),
             external_torque: ExternalTorque::ZERO,
+            linear_dampening: LinearDamping(0.0),
         }
     }
 }
@@ -375,13 +380,16 @@ fn player_inputs(
         (
             &mut ExternalForce,
             &mut ExternalTorque,
+            &mut LinearDamping,
             &Transform,
             &ActionState<Action>,
         ),
         With<Player>,
     >,
 ) {
-    let Ok((mut force, mut torque, transform, action_state)) = player_query.get_single_mut() else {
+    let Ok((mut force, mut torque, mut linear_dampening, transform, action_state)) =
+        player_query.get_single_mut()
+    else {
         return;
     };
 
@@ -393,10 +401,18 @@ fn player_inputs(
                 .mul_vec3(Vec3::new(0., axis.y(), 0.0))
                 .truncate();
             // Torque is applied in the "opposite" direction from inputs
-            torque
-                .apply_torque(axis.x() * -180.0)
+            *torque = torque
+                .apply_torque(axis.x() * -20000.0)
                 .with_persistence(false);
-            force.apply_force(y_axis * 60.0).with_persistence(false);
+            *force = force.apply_force(y_axis * 1000.0).with_persistence(false);
         }
+    } else {
+        info!("{:#?}", force);
+    }
+
+    if action_state.pressed(Action::B) {
+        linear_dampening.0 = 5.0;
+    } else {
+        linear_dampening.0 = 0.0;
     }
 }

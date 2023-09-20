@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1](https://github.com/emarcotte/gbj11/compare/v0.7.0...v0.7.1) (2023-09-20)
+
+
+### Bug Fixes
+
+* make the physics slightly less wonky ([499d5dc](https://github.com/emarcotte/gbj11/commit/499d5dcafe4f0613977694a98a32c11ea5556d24))
+
 ## [0.7.0](https://github.com/emarcotte/gbj11/compare/v0.6.3...v0.7.0) (2023-09-20)
 
 

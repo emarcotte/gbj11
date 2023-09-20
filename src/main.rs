@@ -98,6 +98,8 @@ struct PlayerBundle {
     rigid_body: RigidBody,
     collider: Collider,
     external_force: ExternalForce,
+    external_torque: ExternalTorque,
+    angular_dampening: AngularDamping,
 }
 
 #[derive(Bundle)]
@@ -110,6 +112,8 @@ struct BaddieBundle {
     rigid_body: RigidBody,
     collider: Collider,
     external_force: ExternalForce,
+    external_torque: ExternalTorque,
+    angular_dampening: AngularDamping,
 }
 
 impl BaddieBundle {
@@ -131,6 +135,8 @@ impl BaddieBundle {
             animation: animation_table.idle.clone(),
             collider: Collider::ball(16.0),
             external_force: ExternalForce::ZERO,
+            angular_dampening: AngularDamping(0.0),
+            external_torque: ExternalTorque::ZERO,
         }
     }
 }
@@ -178,6 +184,8 @@ impl PlayerBundle {
             animation: animation_table.flying.clone(),
             collider: Collider::ball(9.0),
             external_force: ExternalForce::ZERO,
+            angular_dampening: AngularDamping(2.25),
+            external_torque: ExternalTorque::ZERO,
         }
     }
 }
@@ -363,21 +371,32 @@ fn fly_in_a_circle(time: Res<Time>, mut player: Query<&mut Transform, With<Playe
  */
 
 fn player_inputs(
-    mut player_query: Query<(&mut ExternalForce, &ActionState<Action>), With<Player>>,
+    mut player_query: Query<
+        (
+            &mut ExternalForce,
+            &mut ExternalTorque,
+            &Transform,
+            &ActionState<Action>,
+        ),
+        With<Player>,
+    >,
 ) {
-    let Ok((mut force, action_state)) = player_query.get_single_mut() else {
+    let Ok((mut force, mut torque, transform, action_state)) = player_query.get_single_mut() else {
         return;
     };
 
     if action_state.pressed(Action::Move) {
         if let Some(axis) = action_state.clamped_axis_pair(Action::Move) {
-            let y_axis = Vec2::new(0., axis.y());
-            let x_axis = Vec2::new(axis.x(), 0.) * 10.0;
-            force
-                .apply_force_at_point(x_axis, Vec2::Y * 10., Vec2::ZERO)
-                .apply_force(y_axis)
+            // The "Y" axis is oriented in alignment with the player's "UP" rather than camera, so rotate by the rotation of the entity itself when applying thrust.
+            let y_axis = transform
+                .rotation
+                .mul_vec3(Vec3::new(0., axis.y(), 0.0))
+                .truncate();
+            // Torque is applied in the "opposite" direction from inputs
+            torque
+                .apply_torque(axis.x() * -180.0)
                 .with_persistence(false);
-            //position.translation += (axis.xy() * time.delta_seconds() * 10.0).extend(0.0);
+            force.apply_force(y_axis * 60.0).with_persistence(false);
         }
     }
 }

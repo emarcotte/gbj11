@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.7.0](https://github.com/emarcotte/gbj11/compare/v0.6.3...v0.7.0) (2023-09-20)
+
+
+### Features
+
+* a baddie component ([4cb8f4c](https://github.com/emarcotte/gbj11/commit/4cb8f4c8ac23d958222ad21e1a065c3c56f92418))
+* i added physics ([9a5f9b7](https://github.com/emarcotte/gbj11/commit/9a5f9b720db3d7d7d5dbf2d84b747efaff651694))
+* some basic inputs ([3f21ed9](https://github.com/emarcotte/gbj11/commit/3f21ed96aee3ef32fc62383348a4bb6523e15c3b))
+
 ## [0.6.3](https://github.com/emarcotte/gbj11/compare/v0.6.2...v0.6.3) (2023-09-17)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.2](https://github.com/emarcotte/gbj11/compare/v0.7.1...v0.7.2) (2023-09-20)
+
+
+### Bug Fixes
+
+* make physics even less wonked out ([0b696f4](https://github.com/emarcotte/gbj11/commit/0b696f4a7157964032c62aa1b2d036f5fab86895))
+
 ## [0.7.1](https://github.com/emarcotte/gbj11/compare/v0.7.0...v0.7.1) (2023-09-20)
 
 

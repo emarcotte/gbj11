@@ -36,11 +36,30 @@
 use animation::{animate, AnimationIndices, AnimationTimer};
 use bevy::{prelude::*, window::WindowResolution};
 use bevy_asset_loader::prelude::*;
-use bevy_xpbd_2d::prelude::*;
+use bevy_xpbd_2d::prelude::{debug::PhysicsDebugConfig, *};
 use iyes_progress::prelude::*;
 use leafwing_input_manager::prelude::*;
+//use rand::prelude::SmallRng;
+//use rand::Rng;
+//use rand_seeder::Seeder;
 
 mod animation;
+
+/*
+#[derive(Resource)]
+
+pub(crate) struct Randomizer {
+    rng: SmallRng,
+}
+
+impl Default for Randomizer {
+    fn default() -> Self {
+        Randomizer {
+            rng: Seeder::from("sup").make_rng(),
+        }
+    }
+}
+*/
 
 #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
 enum Action {
@@ -69,7 +88,10 @@ struct BaddieAnimationTable {
 }
 
 #[derive(Component, Default)]
-struct Player {}
+struct Player {
+    hp: u8,
+    xp_to_level: u32,
+}
 
 #[derive(Component, Default)]
 struct Baddie {}
@@ -79,15 +101,14 @@ struct GameTimer {
     ends_in: f32,
 }
 
-#[derive(Bundle, Default)]
-struct TimerBundle {
-    #[bundle()]
-    text: TextBundle,
-    widget: TimerWidget,
-}
-
 #[derive(Component, Default)]
 struct TimerWidget {}
+
+#[derive(Component, Default)]
+struct HPWidget {}
+
+#[derive(Component, Default)]
+struct XPWidget {}
 
 #[derive(Bundle)]
 struct PlayerBundle {
@@ -173,7 +194,10 @@ impl PlayerBundle {
                 action_state: ActionState::default(),
                 input_map: player_input_map(),
             },
-            player: Player {},
+            player: Player {
+                hp: 10,
+                xp_to_level: 10,
+            },
             sprite: SpriteSheetBundle {
                 texture_atlas: assets.player.clone(),
                 sprite: TextureAtlasSprite {
@@ -224,6 +248,12 @@ const C1: &str = "F0F8BF";
 //const C2: &str = "DF904F";
 const C3: &str = "AF2820";
 
+#[derive(Resource)]
+struct BaddieSpawner {
+    timer: Timer,
+    rotation: f32,
+}
+
 fn main() {
     #[cfg(target_arch = "wasm32")]
     console_error_panic_hook::set_once();
@@ -258,8 +288,13 @@ fn main() {
     .add_collection_to_loading_state::<_, GBJAssets>(loading_game_state)
     .add_state::<GameState>()
     .insert_resource(ClearColor(Color::hex(C3).unwrap()))
+    .insert_resource(PhysicsDebugConfig::all())
     // Fix sprite bleed
     .insert_resource(Msaa::Off)
+    .insert_resource(BaddieSpawner {
+        timer: Timer::from_seconds(1.0, TimerMode::Repeating),
+        rotation: 0.0,
+    })
     .insert_resource(AnimationTables {
         player: PlayerAnimationTable {
             // idle: AnimationIndices { first: 0, last: 0 },
@@ -278,11 +313,18 @@ fn main() {
         Update,
         (
             animate,
-            //  wiggle,
-            // fly_in_a_circle,
+            update_xp,
+            update_hp,
             update_timer,
             player_inputs,
+            spawn_baddies,
         )
+            .run_if(in_state(GameState::Playing)),
+    )
+    .add_systems(
+        Update,
+        (player_baddie_collision_handler)
+            .before(player_inputs)
             .run_if(in_state(GameState::Playing)),
     )
     .run();
@@ -296,7 +338,6 @@ fn setup(
 ) {
     commands.spawn(Camera2dBundle::default());
     commands.spawn(PlayerBundle::new(&assets, &animation_table.player));
-    commands.spawn(BaddieBundle::new(&assets, &animation_table.baddie1));
 
     setup_hud(assets, commands);
 
@@ -306,7 +347,7 @@ fn setup(
 fn setup_hud(assets: Res<'_, GBJAssets>, mut commands: Commands<'_, '_>) {
     let text_style = TextStyle {
         font: assets.font.clone(),
-        font_size: 28.0,
+        font_size: 14.0,
         color: Color::hex(C0).unwrap(),
     };
 
@@ -319,23 +360,61 @@ fn setup_hud(assets: Res<'_, GBJAssets>, mut commands: Commands<'_, '_>) {
                 left: Val::Px(0.0),
                 bottom: Val::Px(0.),
                 width: Val::Percent(100.),
-                height: Val::Px(14.),
+                height: Val::Px(6.),
+                justify_content: JustifyContent::SpaceBetween,
                 ..default()
             },
             background_color: BackgroundColor::from(Color::hex(C1).unwrap()),
             ..default()
         })
         .with_children(|parent| {
-            parent.spawn((TimerBundle {
-                text: TextBundle::from_section("Hi", text_style).with_style(Style {
-                    margin: UiRect::top(Val::Px(-12.)),
-                    ..default()
-                }),
+            let text_widget_style = Style {
+                margin: UiRect::top(Val::Px(-7.)),
                 ..default()
-            },));
+            };
+            parent.spawn((
+                TextBundle::from_section("", text_style.clone())
+                    .with_style(text_widget_style.clone()),
+                TimerWidget {},
+            ));
+
+            parent.spawn((
+                TextBundle::from_section("", text_style.clone())
+                    .with_style(text_widget_style.clone()),
+                HPWidget {},
+            ));
+
+            parent.spawn((
+                TextBundle::from_section("", text_style).with_style(text_widget_style.clone()),
+                XPWidget {},
+            ));
         });
 }
 
+fn update_xp(player: Query<&Player>, mut text_widget: Query<&mut Text, With<XPWidget>>) {
+    let Ok(mut text) = text_widget.get_single_mut() else {
+        return;
+    };
+
+    let Ok(player) = player.get_single() else {
+        return;
+    };
+
+    text.sections[0].value = format!("Next Lvl: {}", player.xp_to_level);
+}
+
+// TODO: Could use an event here...
+fn update_hp(player: Query<&Player>, mut text_widget: Query<&mut Text, With<HPWidget>>) {
+    let Ok(mut text) = text_widget.get_single_mut() else {
+        return;
+    };
+
+    let Ok(player) = player.get_single() else {
+        return;
+    };
+
+    text.sections[0].value = format!("HP: {}", player.hp);
+}
 fn update_timer(
     time: Res<Time>,
     mut game_timer: ResMut<GameTimer>,
@@ -352,28 +431,6 @@ fn update_timer(
         text.sections[0].value = "OH SHIT!".to_string();
     }
 }
-
-/*
-fn wiggle(time: Res<Time>, mut baddies: Query<&mut Transform, With<Baddie>>) {
-    for mut xform in &mut baddies {
-        let time = time.elapsed_seconds();
-        *xform = Transform::from_translation(Vec3::new(time.cos() * 40.0, time.sin() * 40.0, 0.0))
-            .with_rotation(Quat::from_axis_angle(
-                Vec3::Z,
-                time + std::f32::consts::PI / 2.0,
-            ));
-    }
-}
-
-fn fly_in_a_circle(time: Res<Time>, mut player: Query<&mut Transform, With<Player>>) {
-    let Ok(mut player) = player.get_single_mut() else {
-        return;
-    };
-
-    *player = Transform::from_rotation(Quat::from_axis_angle(Vec3::Z, time.elapsed_seconds()))
-        .with_translation(player.translation);
-}
- */
 
 fn player_inputs(
     mut player_query: Query<
@@ -406,13 +463,66 @@ fn player_inputs(
                 .with_persistence(false);
             *force = force.apply_force(y_axis * 1000.0).with_persistence(false);
         }
-    } else {
-        info!("{:#?}", force);
     }
 
     if action_state.pressed(Action::B) {
         linear_dampening.0 = 5.0;
     } else {
         linear_dampening.0 = 0.0;
+    }
+}
+
+fn player_baddie_collision_handler(
+    mut collision_event_reader: EventReader<Collision>,
+    baddies: Query<&Baddie, Without<Player>>,
+    mut player: Query<(&mut Player, Entity)>,
+    mut commands: Commands,
+) {
+    let Ok((mut player, player_ent)) = player.get_single_mut() else {
+        return;
+    };
+
+    for Collision(contact) in &mut collision_event_reader {
+        if [contact.entity1, contact.entity2].contains(&player_ent) {
+            if let Some(baddie) = [contact.entity1, contact.entity2]
+                .iter()
+                .find(|e| baddies.contains(**e))
+            {
+                damage_player(&mut player);
+                unspawn_baddie(*baddie, &mut commands);
+            }
+        }
+    }
+}
+
+fn damage_player(player: &mut Player) {
+    if player.hp > 0 {
+        player.hp -= 1;
+    }
+}
+
+fn unspawn_baddie(entity: Entity, commands: &mut Commands) {
+    if let Some(baddie) = commands.get_entity(entity) {
+        // TODO: Explody animation?
+        baddie.despawn_recursive();
+    }
+}
+
+fn spawn_baddies(
+    time: Res<Time>,
+    mut spawn_time: ResMut<BaddieSpawner>,
+    mut commands: Commands,
+    animation_table: Res<AnimationTables>,
+    assets: Res<GBJAssets>,
+) {
+    spawn_time.timer.tick(time.delta());
+    if spawn_time.timer.just_finished() {
+        let mut ent = commands.spawn(BaddieBundle::new(&assets, &animation_table.baddie1));
+        ent.insert(Transform::from_translation(Vec3::new(
+            spawn_time.rotation.cos() * 80.0,
+            spawn_time.rotation.sin() * 80.0,
+            0.0,
+        )));
+        spawn_time.rotation += std::f32::consts::PI / 4.0;
     }
 }

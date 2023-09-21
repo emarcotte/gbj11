@@ -8,11 +8,21 @@ edition = "2021"
 [dependencies]
 iyes_progress = "0.9.1"
 console_error_panic_hook = "0.1.7"
-bevy_xpbd_2d = "0.2"
 leafwing-input-manager = "0.10.0"
+
+#rand_seeder = "0.2.3"
+
+#[dependencies.rand]
+#version = "0.8.5"
+#features = ["small_rng"]
 
 [dependencies.bevy]
 version = "0.11.2"
+
+[dependencies.bevy_xpbd_2d]
+# version = "0.2"
+git = "https://github.com/Jondolf/bevy_xpbd"
+features = ["debug-plugin"]
 
 [dependencies.bevy_asset_loader]
 version = "0.17.0"

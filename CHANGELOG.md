@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.8.0](https://github.com/emarcotte/gbj11/compare/v0.7.2...v0.8.0) (2023-09-21)
+
+
+### Features
+
+* added basic baddie spawner ([3de497b](https://github.com/emarcotte/gbj11/commit/3de497b608fdc84edc23ce4d18043bc12e6ab13d))
+* link go github from the index page ([d7c29a1](https://github.com/emarcotte/gbj11/commit/d7c29a1fe54fd2a08a84dabb0e68a57b7426e353))
+
 ## [0.7.2](https://github.com/emarcotte/gbj11/compare/v0.7.1...v0.7.2) (2023-09-20)
 
 

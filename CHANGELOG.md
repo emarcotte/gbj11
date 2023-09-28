@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.9.0](https://github.com/emarcotte/gbj11/compare/v0.8.0...v0.9.0) (2023-09-28)
+
+
+### Features
+
+* Added a missle image and spawner/despawner ([d7c6e23](https://github.com/emarcotte/gbj11/commit/d7c6e23dcff92b8b9b36e2b1eb4ba7a3779dc8aa))
+* Missles fly and collide, too ([1796f93](https://github.com/emarcotte/gbj11/commit/1796f93d42b09354d6288014ea0ea3f6cb3dba99))
+
 ## [0.8.0](https://github.com/emarcotte/gbj11/compare/v0.7.2...v0.8.0) (2023-09-21)
 
 

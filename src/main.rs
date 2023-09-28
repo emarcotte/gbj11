@@ -48,6 +48,13 @@ use leafwing_input_manager::prelude::*;
 mod animation;
 mod hud;
 
+#[derive(PhysicsLayer)]
+enum Layer {
+    Player,
+    PlayerAttack,
+    Enemy,
+}
+
 /*
 #[derive(Resource)]
 
@@ -123,6 +130,7 @@ struct PlayerBundle {
     external_torque: ExternalTorque,
     angular_dampening: AngularDamping,
     linear_dampening: LinearDamping,
+    collision_layer: CollisionLayers,
 }
 
 #[derive(Bundle)]
@@ -137,6 +145,7 @@ struct BaddieBundle {
     external_force: ExternalForce,
     external_torque: ExternalTorque,
     angular_dampening: AngularDamping,
+    collision_layer: CollisionLayers,
 }
 
 impl BaddieBundle {
@@ -160,6 +169,10 @@ impl BaddieBundle {
             external_force: ExternalForce::ZERO,
             angular_dampening: AngularDamping(0.0),
             external_torque: ExternalTorque::ZERO,
+            collision_layer: CollisionLayers::new(
+                [Layer::Enemy],
+                [Layer::PlayerAttack, Layer::Player],
+            ),
         }
     }
 }
@@ -181,10 +194,19 @@ struct MissleBundle {
     rigid_body: RigidBody,
     collider: Collider,
     external_force: ExternalForce,
+    collision_layer: CollisionLayers,
 }
 
 impl MissleBundle {
-    fn new(assets: &Res<'_, GBJAssets>, animation_table: &MissleAnimationTable) -> Self {
+    fn new(
+        assets: &Res<'_, GBJAssets>,
+        animation_table: &MissleAnimationTable,
+        dir: Vec2,
+        player_pos: &Vec3,
+    ) -> Self {
+        let mut xform = Transform::from_translation(*player_pos + dir.extend(0.0));
+        xform.rotate_local_z(dir.y.atan2(dir.x) - std::f32::consts::PI / 2.0);
+
         MissleBundle {
             rigid_body: RigidBody::Dynamic,
             sprite: SpriteSheetBundle {
@@ -193,6 +215,7 @@ impl MissleBundle {
                     index: animation_table.flying.first,
                     ..default()
                 },
+                transform: xform,
                 ..default()
             },
             animation_timer: AnimationTimer {
@@ -200,9 +223,10 @@ impl MissleBundle {
             },
             animation: animation_table.flying.clone(),
             collider: Collider::capsule(7.0, 3.0),
-            external_force: ExternalForce::ZERO,
+            external_force: ExternalForce::new(dir * 100.0).with_persistence(true),
             player_attack: PlayerAttack,
             missle: Missle,
+            collision_layer: CollisionLayers::new([Layer::PlayerAttack], [Layer::Enemy]),
         }
     }
 }
@@ -256,6 +280,7 @@ impl PlayerBundle {
             angular_dampening: AngularDamping(0.20),
             external_torque: ExternalTorque::ZERO,
             linear_dampening: LinearDamping(0.0),
+            collision_layer: CollisionLayers::new([Layer::Player], [Layer::Enemy]),
         }
     }
 }
@@ -507,17 +532,26 @@ fn spawn_missle(
     mut commands: Commands,
     animation_table: Res<AnimationTables>,
     assets: Res<GBJAssets>,
+    player: Query<&Transform, With<Player>>,
 ) {
-    // TODO: Should probably have some player state check to see if the player has missles
+    let Ok(player_xform) = player.get_single() else {
+        return;
+    };
+
     missle_timer.0.tick(time.delta());
+
+    // TODO: Should probably have some player state check to see if the player has missles, too
     if missle_timer.0.just_finished() {
         let spawn_time = time.elapsed_seconds();
-        let mut ent = commands.spawn(MissleBundle::new(&assets, &animation_table.missle));
-        ent.insert(Transform::from_translation(Vec3::new(
-            spawn_time.cos() * 20.0,
-            spawn_time.sin() * 20.0,
-            0.0,
-        )));
+        let dir = Vec2::new(spawn_time.cos() * 20.0, spawn_time.sin() * 20.0);
+
+        // TODO: Should inherit player velocity
+        commands.spawn(MissleBundle::new(
+            &assets,
+            &animation_table.missle,
+            dir,
+            &player_xform.translation,
+        ));
     }
 }
 

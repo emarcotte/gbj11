@@ -33,6 +33,8 @@
 // I'm not sure i like this 2018 idiom. Can debate it later.
 #![allow(elided_lifetimes_in_paths)]
 
+use std::time::Duration;
+
 use animation::{animate, AnimationIndices, AnimationTimer};
 use bevy::{prelude::*, window::WindowResolution};
 use bevy_asset_loader::prelude::*;
@@ -44,6 +46,7 @@ use leafwing_input_manager::prelude::*;
 //use rand_seeder::Seeder;
 
 mod animation;
+mod hud;
 
 /*
 #[derive(Resource)]
@@ -76,8 +79,12 @@ enum Action {
 struct AnimationTables {
     player: PlayerAnimationTable,
     baddie1: BaddieAnimationTable,
+    missle: MissleAnimationTable,
 }
 
+struct MissleAnimationTable {
+    flying: AnimationIndices,
+}
 struct PlayerAnimationTable {
     // idle: AnimationIndices,
     flying: AnimationIndices,
@@ -100,15 +107,6 @@ struct Baddie {}
 struct GameTimer {
     ends_in: f32,
 }
-
-#[derive(Component, Default)]
-struct TimerWidget {}
-
-#[derive(Component, Default)]
-struct HPWidget {}
-
-#[derive(Component, Default)]
-struct XPWidget {}
 
 #[derive(Bundle)]
 struct PlayerBundle {
@@ -162,6 +160,49 @@ impl BaddieBundle {
             external_force: ExternalForce::ZERO,
             angular_dampening: AngularDamping(0.0),
             external_torque: ExternalTorque::ZERO,
+        }
+    }
+}
+
+#[derive(Component, Default)]
+struct PlayerAttack;
+
+#[derive(Component, Default)]
+struct Missle;
+
+#[derive(Bundle)]
+struct MissleBundle {
+    #[bundle()]
+    sprite: SpriteSheetBundle,
+    animation: AnimationIndices,
+    animation_timer: AnimationTimer,
+    missle: Missle,
+    player_attack: PlayerAttack,
+    rigid_body: RigidBody,
+    collider: Collider,
+    external_force: ExternalForce,
+}
+
+impl MissleBundle {
+    fn new(assets: &Res<'_, GBJAssets>, animation_table: &MissleAnimationTable) -> Self {
+        MissleBundle {
+            rigid_body: RigidBody::Dynamic,
+            sprite: SpriteSheetBundle {
+                texture_atlas: assets.missle.clone(),
+                sprite: TextureAtlasSprite {
+                    index: animation_table.flying.first,
+                    ..default()
+                },
+                ..default()
+            },
+            animation_timer: AnimationTimer {
+                timer: Timer::from_seconds(0.1, TimerMode::Repeating),
+            },
+            animation: animation_table.flying.clone(),
+            collider: Collider::capsule(7.0, 3.0),
+            external_force: ExternalForce::ZERO,
+            player_attack: PlayerAttack,
+            missle: Missle,
         }
     }
 }
@@ -231,6 +272,10 @@ struct GBJAssets {
 
     //  #[asset(path = "bg.png")]
     // bg: Handle<Image>,
+    #[asset(texture_atlas(tile_size_x = 10., tile_size_y = 14., columns = 3, rows = 1))]
+    #[asset(path = "missle.png")]
+    missle: Handle<TextureAtlas>,
+
     #[asset(path = "ThatBoy.ttf")]
     font: Handle<Font>,
 }
@@ -289,6 +334,7 @@ fn main() {
     .add_state::<GameState>()
     .insert_resource(ClearColor(Color::hex(C3).unwrap()))
     .insert_resource(PhysicsDebugConfig::all())
+    .insert_resource(MissleSpawnTimer::default())
     // Fix sprite bleed
     .insert_resource(Msaa::Off)
     .insert_resource(BaddieSpawner {
@@ -300,12 +346,14 @@ fn main() {
             // idle: AnimationIndices { first: 0, last: 0 },
             flying: AnimationIndices { first: 1, last: 5 },
         },
-        baddie1: {
-            BaddieAnimationTable {
-                idle: AnimationIndices { first: 0, last: 0 },
-            }
+        baddie1: BaddieAnimationTable {
+            idle: AnimationIndices { first: 0, last: 0 },
+        },
+        missle: MissleAnimationTable {
+            flying: AnimationIndices { first: 1, last: 2 },
         },
     })
+    .insert_resource(GameTimer { ends_in: 90f32 })
     .insert_resource(Gravity(Vec2::ZERO))
     .add_systems(Update, bevy::window::close_on_esc)
     .add_systems(OnEnter(GameState::Setup), setup)
@@ -313,11 +361,13 @@ fn main() {
         Update,
         (
             animate,
-            update_xp,
-            update_hp,
-            update_timer,
+            hud::update_xp,
+            hud::update_hp,
+            hud::update_timer,
+            spawn_missle,
             player_inputs,
             spawn_baddies,
+            despawn_far_missles,
         )
             .run_if(in_state(GameState::Playing)),
     )
@@ -339,97 +389,9 @@ fn setup(
     commands.spawn(Camera2dBundle::default());
     commands.spawn(PlayerBundle::new(&assets, &animation_table.player));
 
-    setup_hud(assets, commands);
+    hud::setup(assets, commands);
 
     next_state.set(GameState::Playing);
-}
-
-fn setup_hud(assets: Res<'_, GBJAssets>, mut commands: Commands<'_, '_>) {
-    let text_style = TextStyle {
-        font: assets.font.clone(),
-        font_size: 14.0,
-        color: Color::hex(C0).unwrap(),
-    };
-
-    commands.insert_resource(GameTimer { ends_in: 90f32 });
-
-    commands
-        .spawn(NodeBundle {
-            style: Style {
-                position_type: PositionType::Absolute,
-                left: Val::Px(0.0),
-                bottom: Val::Px(0.),
-                width: Val::Percent(100.),
-                height: Val::Px(6.),
-                justify_content: JustifyContent::SpaceBetween,
-                ..default()
-            },
-            background_color: BackgroundColor::from(Color::hex(C1).unwrap()),
-            ..default()
-        })
-        .with_children(|parent| {
-            let text_widget_style = Style {
-                margin: UiRect::top(Val::Px(-7.)),
-                ..default()
-            };
-            parent.spawn((
-                TextBundle::from_section("", text_style.clone())
-                    .with_style(text_widget_style.clone()),
-                TimerWidget {},
-            ));
-
-            parent.spawn((
-                TextBundle::from_section("", text_style.clone())
-                    .with_style(text_widget_style.clone()),
-                HPWidget {},
-            ));
-
-            parent.spawn((
-                TextBundle::from_section("", text_style).with_style(text_widget_style.clone()),
-                XPWidget {},
-            ));
-        });
-}
-
-fn update_xp(player: Query<&Player>, mut text_widget: Query<&mut Text, With<XPWidget>>) {
-    let Ok(mut text) = text_widget.get_single_mut() else {
-        return;
-    };
-
-    let Ok(player) = player.get_single() else {
-        return;
-    };
-
-    text.sections[0].value = format!("Next Lvl: {}", player.xp_to_level);
-}
-
-// TODO: Could use an event here...
-fn update_hp(player: Query<&Player>, mut text_widget: Query<&mut Text, With<HPWidget>>) {
-    let Ok(mut text) = text_widget.get_single_mut() else {
-        return;
-    };
-
-    let Ok(player) = player.get_single() else {
-        return;
-    };
-
-    text.sections[0].value = format!("HP: {}", player.hp);
-}
-fn update_timer(
-    time: Res<Time>,
-    mut game_timer: ResMut<GameTimer>,
-    mut text_widget: Query<&mut Text, With<TimerWidget>>,
-) {
-    let Ok(mut text) = text_widget.get_single_mut() else {
-        return;
-    };
-
-    if game_timer.ends_in > 0.0f32 {
-        text.sections[0].value = format!("{}", game_timer.ends_in as u32);
-        game_timer.ends_in -= time.delta_seconds();
-    } else {
-        text.sections[0].value = "OH SHIT!".to_string();
-    }
 }
 
 fn player_inputs(
@@ -524,5 +486,53 @@ fn spawn_baddies(
             0.0,
         )));
         spawn_time.rotation += std::f32::consts::PI / 4.0;
+    }
+}
+
+#[derive(Resource)]
+struct MissleSpawnTimer(Timer);
+
+impl Default for MissleSpawnTimer {
+    fn default() -> Self {
+        MissleSpawnTimer(Timer::new(
+            Duration::from_secs_f32(0.5f32),
+            TimerMode::Repeating,
+        ))
+    }
+}
+
+fn spawn_missle(
+    time: Res<Time>,
+    mut missle_timer: ResMut<MissleSpawnTimer>,
+    mut commands: Commands,
+    animation_table: Res<AnimationTables>,
+    assets: Res<GBJAssets>,
+) {
+    // TODO: Should probably have some player state check to see if the player has missles
+    missle_timer.0.tick(time.delta());
+    if missle_timer.0.just_finished() {
+        let spawn_time = time.elapsed_seconds();
+        let mut ent = commands.spawn(MissleBundle::new(&assets, &animation_table.missle));
+        ent.insert(Transform::from_translation(Vec3::new(
+            spawn_time.cos() * 20.0,
+            spawn_time.sin() * 20.0,
+            0.0,
+        )));
+    }
+}
+
+fn despawn_far_missles(
+    player: Query<&Transform, With<Player>>,
+    missles: Query<(Entity, &Transform), With<Missle>>,
+    mut commands: Commands,
+) {
+    let Ok(player_xform) = player.get_single() else {
+        return;
+    };
+
+    for (missle, xform) in &missles {
+        if xform.translation.distance(player_xform.translation).abs() > 180.0 {
+            commands.entity(missle).despawn_recursive();
+        }
     }
 }

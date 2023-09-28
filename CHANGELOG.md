@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.1](https://github.com/emarcotte/gbj11/compare/v0.9.0...v0.9.1) (2023-09-28)
+
+
+### Bug Fixes
+
+* fix my index.html sed hacks ([ba665e1](https://github.com/emarcotte/gbj11/commit/ba665e155f947785bebeb2926bc2ace938453c1d))
+
 ## [0.9.0](https://github.com/emarcotte/gbj11/compare/v0.8.0...v0.9.0) (2023-09-28)
 
 

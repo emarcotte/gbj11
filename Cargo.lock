@@ -1047,7 +1047,7 @@ dependencies = [
 [[package]]
 name = "bevy_xpbd_2d"
 version = "0.2.0"
-source = "git+https://github.com/Jondolf/bevy_xpbd#22f8cd08312520b12f7179f4a5be8f1b5577c38b"
+source = "git+https://github.com/Jondolf/bevy_xpbd#884a233fc698ca52652061c344341e2d595caa92"
 dependencies = [
  "bevy",
  "bevy_xpbd_derive",
@@ -1063,7 +1063,7 @@ dependencies = [
 [[package]]
 name = "bevy_xpbd_derive"
 version = "0.1.0"
-source = "git+https://github.com/Jondolf/bevy_xpbd#22f8cd08312520b12f7179f4a5be8f1b5577c38b"
+source = "git+https://github.com/Jondolf/bevy_xpbd#884a233fc698ca52652061c344341e2d595caa92"
 dependencies = [
  "quote",
  "syn 2.0.37",

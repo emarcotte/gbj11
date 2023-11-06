@@ -29,4 +29,4 @@ version = "0.17.0"
 features = ["2d", "progress_tracking"]
 
 [dev-dependencies]
-wasm-bindgen-test = "0.3.37"
+wasm-bindgen-test = "0.3.38"

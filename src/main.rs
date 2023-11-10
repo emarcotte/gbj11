@@ -482,7 +482,6 @@ fn player_baddie_collision_handler(
     }
 }
 
-
 fn damage_player(player: &mut Player) {
     if player.hp > 0 {
         player.hp -= 1;

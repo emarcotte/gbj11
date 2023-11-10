@@ -6,9 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-iyes_progress = "0.9.1"
+iyes_progress = "0.10"
 console_error_panic_hook = "0.1.7"
-leafwing-input-manager = "0.10.0"
+leafwing-input-manager = "0.11"
 
 #rand_seeder = "0.2.3"
 
@@ -20,12 +20,11 @@ leafwing-input-manager = "0.10.0"
 version = "0.12.0"
 
 [dependencies.bevy_xpbd_2d]
-# version = "0.2"
-git = "https://github.com/Jondolf/bevy_xpbd"
+version = "0.3"
 features = ["debug-plugin"]
 
 [dependencies.bevy_asset_loader]
-version = "0.17.0"
+version = "0.18"
 features = ["2d", "progress_tracking"]
 
 [dev-dependencies]

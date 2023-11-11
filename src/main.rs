@@ -469,7 +469,7 @@ fn player_baddie_collision_handler(
         return;
     };
 
-    for Collision(contact) in &mut collision_event_reader {
+    for Collision(contact) in &mut collision_event_reader.read() {
         if [contact.entity1, contact.entity2].contains(&player_ent) {
             if let Some(baddie) = [contact.entity1, contact.entity2]
                 .iter()

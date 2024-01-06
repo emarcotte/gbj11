@@ -331,7 +331,7 @@ fn main() {
     let mut app = App::default();
 
     let loading_game_state = GameState::Loading;
-    let loading_state = LoadingState::new(loading_game_state);
+    let loading_state = LoadingState::new(loading_game_state).load_collection::<GBJAssets>();
     let loading_plugin = ProgressPlugin::new(loading_game_state).continue_to(GameState::Setup);
 
     app.add_plugins((
@@ -355,7 +355,6 @@ fn main() {
         PhysicsPlugins::default(),
     ))
     .add_loading_state(loading_state)
-    .add_collection_to_loading_state::<_, GBJAssets>(loading_game_state)
     .add_state::<GameState>()
     .insert_resource(ClearColor(Color::hex(C3).unwrap()))
     .insert_resource(PhysicsDebugConfig::all())

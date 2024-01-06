@@ -24,7 +24,7 @@ version = "0.3"
 features = ["debug-plugin"]
 
 [dependencies.bevy_asset_loader]
-version = "0.18"
+version = "0.19"
 features = ["2d", "progress_tracking"]
 
 [dev-dependencies]

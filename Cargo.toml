@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-iyes_progress = "0.10"
+iyes_progress = "0.11"
 console_error_panic_hook = "0.1.7"
 leafwing-input-manager = "0.11"
 

@@ -13,11 +13,7 @@ pub(crate) struct AnimationIndices {
 
 pub(crate) fn animate(
     time: Res<Time>,
-    mut animated_sprites: Query<(
-        &mut AnimationTimer,
-        &AnimationIndices,
-        &mut TextureAtlasSprite,
-    )>,
+    mut animated_sprites: Query<(&mut AnimationTimer, &AnimationIndices, &mut TextureAtlas)>,
 ) {
     for (mut timer, indices, mut sprite) in &mut animated_sprites {
         timer.timer.tick(time.delta());

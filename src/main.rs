@@ -38,7 +38,7 @@ use std::time::Duration;
 use animation::{animate, AnimationIndices, AnimationTimer};
 use bevy::{prelude::*, window::WindowResolution};
 use bevy_asset_loader::prelude::*;
-use bevy_xpbd_2d::prelude::{debug::PhysicsDebugConfig, *};
+use bevy_xpbd_2d::prelude::*;
 use iyes_progress::prelude::*;
 use leafwing_input_manager::prelude::*;
 //use rand::prelude::SmallRng;
@@ -154,18 +154,18 @@ impl BaddieBundle {
             baddie: Baddie {},
             rigid_body: RigidBody::Dynamic,
             sprite: SpriteSheetBundle {
-                texture_atlas: assets.baddie1.clone(),
-                sprite: TextureAtlasSprite {
+                atlas: TextureAtlas {
+                    layout: assets.baddie1_layout.clone(),
                     index: animation_table.idle.first,
-                    ..default()
                 },
+                texture: assets.baddie1_image.clone(),
                 ..default()
             },
             animation_timer: AnimationTimer {
                 timer: Timer::from_seconds(0.1, TimerMode::Repeating),
             },
             animation: animation_table.idle.clone(),
-            collider: Collider::ball(16.0),
+            collider: Collider::circle(16.0),
             external_force: ExternalForce::ZERO,
             angular_dampening: AngularDamping(0.0),
             external_torque: ExternalTorque::ZERO,
@@ -210,11 +210,11 @@ impl MissleBundle {
         MissleBundle {
             rigid_body: RigidBody::Dynamic,
             sprite: SpriteSheetBundle {
-                texture_atlas: assets.missle.clone(),
-                sprite: TextureAtlasSprite {
+                atlas: TextureAtlas {
+                    layout: assets.missle_layout.clone(),
                     index: animation_table.flying.first,
-                    ..default()
                 },
+                texture: assets.missle_image.clone(),
                 transform: xform,
                 ..default()
             },
@@ -233,21 +233,21 @@ impl MissleBundle {
 
 fn player_input_map() -> InputMap<Action> {
     let mut input_map = InputMap::default();
-    input_map.insert(KeyCode::A, Action::A);
-    input_map.insert(KeyCode::B, Action::B);
+    input_map.insert(Action::A, KeyCode::KeyA);
+    input_map.insert(Action::B, KeyCode::KeyB);
     input_map.insert(
-        VirtualDPad {
-            up: KeyCode::Up.into(),
-            down: KeyCode::Down.into(),
-            left: KeyCode::Left.into(),
-            right: KeyCode::Right.into(),
-        },
         Action::Move,
+        VirtualDPad {
+            up: KeyCode::ArrowUp.into(),
+            down: KeyCode::ArrowDown.into(),
+            left: KeyCode::ArrowLeft.into(),
+            right: KeyCode::ArrowRight.into(),
+        },
     );
-    input_map.insert(KeyCode::Return, Action::Start);
-    input_map.insert(KeyCode::NumpadEnter, Action::Start);
-    input_map.insert(KeyCode::ShiftLeft, Action::Select);
-    input_map.insert(KeyCode::ShiftRight, Action::Select);
+    input_map.insert(Action::Start, KeyCode::Enter);
+    input_map.insert(Action::Start, KeyCode::NumpadEnter);
+    input_map.insert(Action::Select, KeyCode::ShiftLeft);
+    input_map.insert(Action::Select, KeyCode::ShiftRight);
     input_map
 }
 
@@ -264,18 +264,18 @@ impl PlayerBundle {
                 xp_to_level: 10,
             },
             sprite: SpriteSheetBundle {
-                texture_atlas: assets.player.clone(),
-                sprite: TextureAtlasSprite {
+                atlas: TextureAtlas {
+                    layout: assets.player_layout.clone(),
                     index: animation_table.flying.first,
-                    ..default()
                 },
+                texture: assets.player_sprite.clone(),
                 ..default()
             },
             animation_timer: AnimationTimer {
                 timer: Timer::from_seconds(0.1, TimerMode::Repeating),
             },
             animation: animation_table.flying.clone(),
-            collider: Collider::ball(9.0),
+            collider: Collider::circle(9.0),
             external_force: ExternalForce::ZERO,
             angular_dampening: AngularDamping(0.20),
             external_torque: ExternalTorque::ZERO,
@@ -287,19 +287,22 @@ impl PlayerBundle {
 
 #[derive(AssetCollection, Resource)]
 struct GBJAssets {
-    #[asset(texture_atlas(tile_size_x = 18., tile_size_y = 18., columns = 6, rows = 1))]
-    #[asset(path = "player.png")]
-    player: Handle<TextureAtlas>,
+    #[asset(key = "player.layout")]
+    player_layout: Handle<TextureAtlasLayout>,
+    #[asset(key = "player.image")]
+    player_sprite: Handle<Image>,
 
-    #[asset(texture_atlas(tile_size_x = 32., tile_size_y = 32., columns = 1, rows = 1))]
-    #[asset(path = "baddie1.png")]
-    baddie1: Handle<TextureAtlas>,
+    #[asset(key = "missle.layout")]
+    missle_layout: Handle<TextureAtlasLayout>,
+    #[asset(key = "missle.image")]
+    missle_image: Handle<Image>,
 
     //  #[asset(path = "bg.png")]
     // bg: Handle<Image>,
-    #[asset(texture_atlas(tile_size_x = 10., tile_size_y = 14., columns = 3, rows = 1))]
-    #[asset(path = "missle.png")]
-    missle: Handle<TextureAtlas>,
+    #[asset(key = "baddie1.layout")]
+    baddie1_layout: Handle<TextureAtlasLayout>,
+    #[asset(key = "baddie1.image")]
+    baddie1_image: Handle<Image>,
 
     #[asset(path = "ThatBoy.ttf")]
     font: Handle<Font>,
@@ -331,7 +334,9 @@ fn main() {
     let mut app = App::default();
 
     let loading_game_state = GameState::Loading;
-    let loading_state = LoadingState::new(loading_game_state).load_collection::<GBJAssets>();
+    let loading_state = LoadingState::new(loading_game_state)
+        .with_dynamic_assets_file::<StandardDynamicAssetCollection>("entities.assets.ron")
+        .load_collection::<GBJAssets>();
     let loading_plugin = ProgressPlugin::new(loading_game_state).continue_to(GameState::Setup);
 
     app.add_plugins((
@@ -340,7 +345,6 @@ fn main() {
                 primary_window: Some(Window {
                     mode: bevy::window::WindowMode::Windowed,
                     transparent: true,
-                    fit_canvas_to_parent: false,
                     canvas: Some("#bevy".to_owned()),
                     resolution: WindowResolution::new(160f32, 140f32),
                     resizable: false,
@@ -355,9 +359,9 @@ fn main() {
         PhysicsPlugins::default(),
     ))
     .add_loading_state(loading_state)
-    .add_state::<GameState>()
+    .init_state::<GameState>()
     .insert_resource(ClearColor(Color::hex(C3).unwrap()))
-    .insert_resource(PhysicsDebugConfig::all())
+    // .insert_resource(PhysicsDebugConfig::all())
     .insert_resource(MissleSpawnTimer::default())
     // Fix sprite bleed
     .insert_resource(Msaa::Off)
@@ -436,8 +440,8 @@ fn player_inputs(
         return;
     };
 
-    if action_state.pressed(Action::Move) {
-        if let Some(axis) = action_state.clamped_axis_pair(Action::Move) {
+    if action_state.pressed(&Action::Move) {
+        if let Some(axis) = action_state.clamped_axis_pair(&Action::Move) {
             // The "Y" axis is oriented in alignment with the player's "UP" rather than camera, so rotate by the rotation of the entity itself when applying thrust.
             let y_axis = transform
                 .rotation
@@ -451,7 +455,7 @@ fn player_inputs(
         }
     }
 
-    if action_state.pressed(Action::B) {
+    if action_state.pressed(&Action::B) {
         linear_dampening.0 = 5.0;
     } else {
         linear_dampening.0 = 0.0;

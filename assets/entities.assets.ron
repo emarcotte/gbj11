@@ -1,0 +1,29 @@
+({
+    "missle.image": File (
+        path: "missle.png",
+    ),
+    "missle.layout": TextureAtlasLayout (
+        tile_size_x: 10.,
+        tile_size_y: 14.,
+        columns: 3,
+        rows: 1,
+    ),
+    "baddie1.image": File (
+        path: "baddie1.png",
+    ),
+    "baddie1.layout": TextureAtlasLayout (
+        tile_size_x: 32.,
+        tile_size_y: 32.,
+        columns: 1,
+        rows: 1,
+    ),
+    "player.image": File (
+        path: "player.png",
+    ),
+    "player.layout": TextureAtlasLayout (
+        tile_size_x: 18.,
+        tile_size_y: 18.,
+        columns: 6,
+        rows: 1,
+    ),
+})

@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.10.0](https://github.com/emarcotte/gbj11/compare/v0.9.1...v0.10.0) (2024-02-25)
+
+
+### Features
+
+* bumps bevy 0.13 ([6427f04](https://github.com/emarcotte/gbj11/commit/6427f04ef6a9054163a583d585c84918e4f2ed45))
+* scale the window ([9971623](https://github.com/emarcotte/gbj11/commit/99716233ef0ec9b1c8a83d1896e7f70f33e3a9aa))
+
 ## [0.9.1](https://github.com/emarcotte/gbj11/compare/v0.9.0...v0.9.1) (2023-09-28)
 
 

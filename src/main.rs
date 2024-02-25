@@ -339,6 +339,8 @@ fn main() {
         .load_collection::<GBJAssets>();
     let loading_plugin = ProgressPlugin::new(loading_game_state).continue_to(GameState::Setup);
 
+    let res = (160.0, 140.);
+    let scale = 3.0;
     app.add_plugins((
         DefaultPlugins
             .set(WindowPlugin {
@@ -346,7 +348,8 @@ fn main() {
                     mode: bevy::window::WindowMode::Windowed,
                     transparent: true,
                     canvas: Some("#bevy".to_owned()),
-                    resolution: WindowResolution::new(160f32, 140f32),
+                    resolution: WindowResolution::new(res.0 * scale, res.1 * scale)
+                        .with_scale_factor_override(scale),
                     resizable: false,
                     ..Default::default()
                 }),

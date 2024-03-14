@@ -28,4 +28,4 @@ version = "^0.20"
 features = ["2d", "progress_tracking", "standard_dynamic_assets"]
 
 [dev-dependencies]
-wasm-bindgen-test = "^0.3.41"
+wasm-bindgen-test = "^0.3.42"

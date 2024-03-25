@@ -17,7 +17,7 @@ leafwing-input-manager = "^0.13"
 #features = ["small_rng"]
 
 [dependencies.bevy]
-version = "^0.13.0"
+version = "^0.13.1"
 
 [dependencies.bevy_xpbd_2d]
 version = "^0.4"

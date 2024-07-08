@@ -20,7 +20,7 @@ leafwing-input-manager = "^0.13"
 version = "^0.13.2"
 
 [dependencies.bevy_xpbd_2d]
-version = "^0.4"
+version = "^0.5"
 features = ["debug-plugin"]
 
 [dependencies.bevy_asset_loader]
